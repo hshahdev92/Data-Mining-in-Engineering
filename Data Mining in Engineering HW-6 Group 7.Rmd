@@ -1,0 +1,265 @@
+---
+title: "Data Mining in Engineering HW-6 Group 7"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+library(readxl)
+library(utils)
+library(caret)
+library(neuralnet)
+library(magrittr)
+library(ggplot2)
+library(plyr)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+toyota_cars <- read_excel("18 Toyota Corolla.xlsx")
+
+toyota_cars <- toyota_cars[c(3,4,7,9,12,13,19)]
+```
+
+
+```{r}
+normalize <- function(x){
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+toyota_cars <- as.data.frame(lapply(toyota_cars,normalize))
+```
+
+
+# Divide the data set in training dataset of 75% and test dataset of 15%
+
+```{r}
+training_set = sample(row.names(toyota_cars), dim(toyota_cars)[1]*0.75)
+validation_set = setdiff(row.names(toyota_cars), training_set)
+train_Dataset <- toyota_cars[training_set, c(1,2,3,4,6)]
+valid_Dataset <- toyota_cars[validation_set, c(1,2,3,4,6)]
+```
+
+# We are using neuralnet library and rprop+ algorithm
+
+# Neural Network with threshold = 1
+
+```{r}
+nn1 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 1, algorithm = 'rprop+')
+training_set.prediction1 <- compute(nn1, train_Dataset[,-1])
+trainprednr1 <- training_set.prediction1$net.result
+rmse_train1 <- sqrt(mean((trainprednr1 - train_Dataset$Price)^2))
+validation_set.prediction1 <- compute(nn1, valid_Dataset[,-1]) 
+validprednr1 <- validation_set.prediction1$net.result
+rmse_valid1 <- sqrt(mean((validprednr1 - valid_Dataset$Price)^2))
+```
+
+
+# Neural Network with threshold = 0.1
+
+```{r}
+nn2 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 0.1, algorithm = 'rprop+')
+training_set.prediction2 <- compute(nn2, train_Dataset[,-1]) 
+trainprednr2 <- training_set.prediction2$net.result
+rmse_train2 <- sqrt(mean((trainprednr2 - train_Dataset$Price)^2))
+validation_set.prediction2 <- compute(nn2, valid_Dataset[,-1])
+validprednr2 <- validation_set.prediction2$net.result
+rmse_valid2 <- sqrt(mean((validprednr2 - valid_Dataset$Price)^2))
+```
+
+
+# Neural Network with threshold = 0.05
+
+```{r}
+nn3 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 0.05, algorithm = 'rprop+')
+training_set.prediction3 <- compute(nn3, train_Dataset[,-1]) 
+trainprednr3 <- training_set.prediction3$net.result 
+rmse_train3 <- sqrt(mean((trainprednr3-train_Dataset$Price)^2))
+validation_set.prediction3 <- compute(nn3, valid_Dataset[,-1])
+validprednr3 <- validation_set.prediction3$net.result
+rmse_valid3 <- sqrt(mean((validprednr3-valid_Dataset$Price)^2))
+```
+
+
+# Neural Network with threshold = 0.01
+
+```{r}
+nn4 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE,threshold = 0.01, algorithm = 'rprop+')
+training_set.prediction4 <- compute(nn4, train_Dataset[,-1])
+trainprednr4 <- training_set.prediction4$net.result
+rmse_train4 <- sqrt(mean((trainprednr4-train_Dataset$Price)^2))
+validation_set.prediction4 <- compute(nn4, valid_Dataset[,-1])
+validprednr4<- validation_set.prediction4$net.result 
+rmse_valid4 <- sqrt(mean((validprednr4-valid_Dataset$Price)^2))
+```
+
+
+# Neural Network with threshold = 0.005
+
+```{r}
+nn5 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 0.005, algorithm = 'rprop+') 
+training_set.prediction5 <- compute(nn5, train_Dataset[,-1])
+trainprednr5 <- training_set.prediction5$net.result
+rmse_train5 <- sqrt(mean((trainprednr5 - train_Dataset$Price)^2))
+validation_set.prediction5 <- compute(nn5, valid_Dataset[,-1])
+validprednr5 <- validation_set.prediction5$net.result
+rmse_valid5 <- sqrt(mean((validprednr5 - valid_Dataset$Price)^2))
+```
+
+
+# Neural Network with threshold = 0.001
+
+```{r}
+nn6 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 0.001,  algorithm = 'rprop+')
+training_set.prediction6 <- compute(nn6, train_Dataset[,-1])
+trainprednr6 <- training_set.prediction6$net.result
+rmse_train6 <- sqrt(mean((trainprednr6 - train_Dataset$Price)^2))
+validation_set.prediction6 <- compute(nn6, valid_Dataset[,-1])
+validprednr6 <- validation_set.prediction6$net.result 
+rmse_valid6 <- sqrt(mean((validprednr6 - valid_Dataset$Price)^2))
+```
+
+
+# Neural Network with threshold = 0.0001
+
+```{r}
+nn7 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 0.0001, algorithm = 'rprop+')
+training_set.prediction7 <- compute(nn7, train_Dataset[,-1])
+trainprednr7 <- training_set.prediction7$net.result
+rmse_train7 <- sqrt(mean((trainprednr7 - train_Dataset$Price)^2))
+validation_set.prediction7 <- compute(nn7, valid_Dataset[,-1])
+validprednr7 <- validation_set.prediction7$net.result
+rmse_valid7 <- sqrt(mean((validprednr7 - valid_Dataset$Price)^2))
+```
+
+
+# RMSE values for training and test dataset for Neural Networks with different threshold values
+
+```{r}
+rmse_train <- rbind(rmse_train1, rmse_train2, rmse_train3, rmse_train4, rmse_train5, rmse_train6, rmse_train7)
+rmse_valid <- rbind(rmse_valid1, rmse_valid2, rmse_valid3, rmse_valid4, rmse_valid5, rmse_valid6, rmse_valid7)
+rmse_train
+rmse_valid
+```
+
+
+# Neural Network with 2 nodes of hidden layers
+
+```{r}
+nn8 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 1, algorithm = 'rprop+', hidden = 2) 
+training_set.prediction8 <- compute(nn8, train_Dataset[,-1]) 
+trainprednr8 <- training_set.prediction8$net.result 
+rmse_train8 <- sqrt(mean((trainprednr8 - train_Dataset$Price)^2)) 
+validation_set.prediction8 <- compute(nn8, valid_Dataset[,-1]) 
+validprednr8 <- validation_set.prediction8$net.result 
+rmse_valid8 <- sqrt(mean((validprednr8 - valid_Dataset$Price)^2))
+```
+
+
+# Neural Network with 4 nodes of hidden layers
+
+```{r}
+nn9 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 1, algorithm = 'rprop+', hidden = 4)
+training_set.prediction9 <- compute(nn9, train_Dataset[,-1])
+trainprednr9 <- training_set.prediction9$net.result
+rmse_train9 <- sqrt(mean((trainprednr9 - train_Dataset$Price)^2))
+validation_set.prediction9 <- compute(nn9, valid_Dataset[,-1])
+validprednr9 <- validation_set.prediction9$net.result
+rmse_valid9 <- sqrt(mean((validprednr9 - valid_Dataset$Price)^2))
+```
+
+
+# Neural Network with 8 nodes of hidden
+
+```{r}
+nn10 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 1, algorithm = 'rprop+', hidden = 8)
+training_set.prediction10 <- compute(nn10, train_Dataset[,-1])
+trainprednr10 <- training_set.prediction10$net.result
+rmse_train10 <- sqrt(mean((trainprednr10 - train_Dataset$Price)^2))
+validation_set.prediction10 <- compute(nn10, valid_Dataset[,-1])
+validprednr10 <- validation_set.prediction10$net.result
+rmse_valid10 <- sqrt(mean((validprednr10 - valid_Dataset$Price)^2))
+```
+
+
+# RMSE values for training and testing dataset for Neural Networks with different number of hidden layer nodes
+
+```{r}
+rmse_train1 <- rbind(rmse_train8, rmse_train9, rmse_train10)
+rmse_valid1 <- rbind(rmse_valid8, rmse_valid9, rmse_valid10)
+rmse_train1
+rmse_valid1
+```
+
+
+# Neural Network with changing the number of layers from 1 to 2 in the network
+
+```{r}
+nn11 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 1, algorithm ='rprop+', hidden = c(1,2))
+training_set.prediction11 <- compute(nn11, train_Dataset[,-1])
+trainprednr11 <- training_set.prediction11$net.result
+rmse_train11 <- sqrt(mean((trainprednr11-train_Dataset$Price)^2))
+validation_set.prediction11 <- compute(nn11, valid_Dataset[,-1])
+validprednr11 <- validation_set.prediction11$net.result
+rmse_valid11 <- sqrt(mean((validprednr11-valid_Dataset$Price)^2))
+rmse_train11 
+
+rmse_valid11 
+
+```
+
+
+# Neural Network with changing the number of layers from 2 to 1 in the network
+
+```{r}
+nn12 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 1, algorithm ='rprop+', hidden = c(2,1))
+training_set.prediction12 <- compute(nn12, train_Dataset[,-1])
+trainprednr12 <- training_set.prediction12$net.result
+rmse_train12 <- sqrt(mean((trainprednr12 - train_Dataset$Price)^2))
+validation_set.prediction12 <- compute(nn12, valid_Dataset[,-1])
+validprednr12 <- validation_set.prediction12$net.result
+rmse_valid12 <- sqrt(mean((validprednr12 - valid_Dataset$Price)^2))
+rmse_train12 
+
+rmse_valid12 
+
+```
+
+
+# Neural Network with learningrate
+
+```{r}
+nn13 <- neuralnet(Price ~ Age_08_04 + KM + HP + cc, data = train_Dataset, linear.output = FALSE, threshold = 1, algorithm = 'rprop+', learningrate = 1)
+training_set.prediction13 <- compute(nn13, train_Dataset[,-1])
+trainprednr13 <- training_set.prediction13$net.result
+rmse_train13 <- sqrt(mean((trainprednr13 - train_Dataset$Price)^2))
+validation_set.prediction13 <- compute(nn13, valid_Dataset[,-1])
+validprednr13 <- validation_set.prediction13$net.result
+rmse_valid13 <- sqrt(mean((validprednr13 - valid_Dataset$Price)^2))
+rmse_train13 
+
+rmse_valid13 
+
+```
+
+
+a) What happens to the RMS error (or Sum of Squares Error) for the training data as the value of threshold decreases?
+
+Answer: We can draw the conclusion from the output that as the threshold value decreases, the RMS error for training data set also decreases.
+
+
+b) What happens to the RMS error Sum of Squares Error for the validation data?
+
+Answer: We can draw the conclusion from the output that as the threshold value decreases, the RMS error for the validation data set also decreases.  
+
+
+c) Conduct an experiment to assess the effect of changing the number of hidden layer nodes (default 1), e.g., 1,2,4,8.
+
+Answer: There is a varying effect on the value of RMS error as per the number of hidden layer nodes. As we can observe from the output that the RMS error is highest for 2 hidden layer nodes following by 8 hidden layer nodes and lastly 4 hidden layer nodes.
+
+
+d) Conduct a similar experiment to assess the effect of changing the number of hidden layers from 1 to 2 in the network.
+
+Answer: After performing this experiment, we can observe that when the number of hidden layer increases, the value of RMS error decreases.

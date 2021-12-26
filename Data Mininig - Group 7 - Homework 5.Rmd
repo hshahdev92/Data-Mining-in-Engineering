@@ -1,0 +1,335 @@
+---
+title: "Data Mining - Group 7 - Homework 5"
+author: "Suman Ravichandran & Harsh Shahdev"
+date: "12/5/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1
+
+``` {r}
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(caret)
+library(rpart)
+library(reshape2)
+library(tree)
+library(magrittr)	
+library(rpart.plot)
+
+
+Toyota_Corolla <- read_xlsx("ToyotaCorolla.xlsx", sheet = "data")
+
+dummies <- dummyVars(~ Fuel_Type + Color, data = Toyota_Corolla, sep = ".")
+dummies <- predict(dummies, Toyota_Corolla)
+	
+Toyota_Corolla <- cbind(
+select(Toyota_Corolla, -c("Fuel_Type", "Color")),
+as.data.frame(dummies)
+)
+	
+set.seed(20)
+split_sample <- sample(1:3,
+size = nrow(Toyota_Corolla),
+prob = c(0.50, 0.30, 0.20),
+replace = TRUE
+)
+	
+train_data <- Toyota_Corolla[split_sample == 1, ]
+valididation_data <- Toyota_Corolla[split_sample == 2, ]
+test_data <- Toyota_Corolla[split_sample == 3, ]
+```
+	
+
+# Problem 1-a
+``` {r}
+reg_tree <- rpart(Price ~ Age_08_04 + KM + Fuel_TypeCNG + Fuel_TypeDiesel +
+Fuel_TypePetrol + HP + Automatic + Doors +
+Quarterly_Tax + Mfr_Guarantee + Guarantee_Period + Airco + Automatic_airco + CD_Player + Powered_Windows + Sport_Model + Tow_Bar, data = train_data, method = "anova")
+	
+rpart.plot(reg_tree)
+
+plotcp(reg_tree)
+
+print(reg_tree$variable.importance)
+```
+# Problem 1 a (i) Which appear to be the three or four most important car specifications for predicting the car’s price?
+# - Age_08_04, KM and Automatic_airco are the important car specifications for predicting the car's price
+	
+
+# Problem 1-a (ii)
+
+``` {r message = FALSE, warning = FALSE}
+train_preds <- predict(reg_tree, train_data)
+validation_preds <- predict(reg_tree, valididation_data)
+test_preds <- predict(reg_tree, test_data)
+
+train_error <- RMSE(train_preds, train_data$Price)
+validation_error <- RMSE(validation_preds, valididation_data$Price)
+test_error <- RMSE(test_preds, test_data$Price)
+
+cat("Train Data RMSE", train_error, "\n")
+cat("Validation Data RMSE", validation_error, "\n")
+cat("Test Data RMSE", test_error, "\n")
+
+
+df <- melt(as.data.frame(cbind(train_preds, validation_preds, test_preds)))
+ggplot(data = df, aes(x = variable, y = value, fill = variable)) +
+  geom_boxplot() +
+  theme(legend.position = "none") +
+  ggtitle("Price Predictions Box Plot") +
+  labs(x = "", y = "Price")
+```
+# Performance analytsis of RSME Error - 
+#Good with the training data, 
+#Worse with Validation data 
+#Worst with the Test data
+#	There are 2 samples which are outliers in all three of the sets. 
+	
+
+# Problem 1-a (iv)
+
+``` {r}
+full_tree <- rpart(Price ~ Age_08_04 + KM + Fuel_TypeCNG + Fuel_TypeDiesel + Fuel_TypePetrol + HP + Automatic + Doors               + Quarterly_Tax + Mfr_Guarantee + Guarantee_Period + Airco + Automatic_airco + CD_Player +                          Powered_Windows + Sport_Model + Tow_Bar, data = train_data, method = "anova", control = list(cp = 0))
+
+rpart.plot(full_tree)
+
+plotcp(full_tree)
+```
+
+``` {r}
+train_preds <- predict(full_tree, train_data)
+validation_preds <- predict(full_tree, valididation_data)
+test_preds <- predict(full_tree, test_data)
+
+train_error <- RMSE(train_preds, train_data$Price)
+validation_error <- RMSE(validation_preds, valididation_data$Price)
+test_error <- RMSE(test_preds, test_data$Price)
+
+cat("Train Data RMSE", train_error, "\n")
+cat("Validation Data RMSE", validation_error, "\n")
+cat("Test Data RMSE", test_error, "\n")
+```
+
+# Using the full tree, we reduce the RMSE error by a huge margin on both the validation and the test data sets Although the full tree doesn't use the validation data, it has more decision boundaries which are correctly separating the validation to reduce its error.
+	
+
+# Problem 1-b 
+
+``` {r}
+Toyota_Corolla$Price <- cut(Toyota_Corolla$Price, breaks = seq(4300, 32500, by = 1410))
+
+set.seed(20)
+split_sample <- sample(1:3, size = nrow(Toyota_Corolla), prob = c(0.50, 0.30, 0.20), replace = TRUE)
+
+train_data <- Toyota_Corolla[split_sample == 1, ]
+valididation_data <- Toyota_Corolla[split_sample == 2, ]
+test_data <- Toyota_Corolla[split_sample == 3, ]
+```
+
+``` {r}
+class_tree <- rpart(Price ~ Age_08_04 + KM + Fuel_TypeCNG + Fuel_TypeDiesel + Fuel_TypePetrol + HP + Automatic + Doors + Quarterly_Tax + Mfr_Guarantee + Guarantee_Period + Airco + Automatic_airco + CD_Player + Powered_Windows + Sport_Model + Tow_Bar, data = train_data )
+
+rpart.plot(class_tree)
+
+plotcp(class_tree)
+
+print(class_tree$variable.importance)
+```
+
+
+# Problem 1-b (i)
+# Answer - 
+# - The top predictors of both the classification and regression trees are almost the same except of Quarterly_Tax which is only useful in the regression tree.
+#	- The classification tree is both structurally more complex as well bigger than the regression tree. This difference is created because in a regression tree, the response value is the mean of all the other values in the particular region however in the classification tree, the response is the majority class of the region.
+#	- Decision trees are sensitive to change in training data and thats why the difference in shape is so evident.
+	
+
+# Problem 1-b (ii)
+
+``` {r}
+df <- data.frame(
+  Age_08_04 = 77,
+  KM = 117000,
+  Fuel_TypePetrol = 1,
+  Fuel_TypeDiesel = 0,
+  Fuel_TypeCNG = 0,
+  HP = 110,
+  Automatic = 0,
+  Doors = 5,
+  Quarterly_Tax = 100,
+  Mfr_Guarantee = 0,
+  Guarantee_Period = 3,
+  Airco = 1,
+  Automatic_airco = 0,
+  CD_Player = 0,
+  Powered_Windows = 0,
+  Sport_Model = 0,
+  Tow_Bar = 1
+)
+
+
+df.pred.reg <- predict(reg_tree, df)
+df.pred.class <- as.data.frame(predict(class_tree, df))
+df.pred.class <- attributes(which.max(df.pred.class))$names
+
+cat("Prediction of Regression Tree:", df.pred.reg, "\n")
+cat("Prediction of Classification Tree:", df.pred.class, "\n")
+
+rm(list = ls())
+```
+
+# Problem 1-b (iii)
+#	- The Regression Tree predicts the new data Price to be `$`7906.141. While the classification tree predicts that the price will be in the category/bin/range `$`7120-`$`8530.
+#	- The advantage of using regression trees is that we can obtain an exact numerical prediction of our data.
+#	- However classification trees can prove to be more useful in predicting numerical data in situations where we are more concerned with the range estimation of the data rather than it's average value.
+	---
+
+# Problem 2
+``` {r}
+Bank_data <- read_xlsx("Banks.xlsx", sheet = "Bank Financial Condition")
+
+
+fit_full <- glm(`Financial Condition` ~ `TotLns&Lses/Assets` + `TotExp/Assets`,
+  data = Bank_data, family = "binomial")
+
+summary(fit_full)
+```
+
+``` {r}
+exp(coef(fit_full))
+```
+	
+
+# Problem 2-a 
+	
+# (i) The logit as a function of the predictors 
+#	Logit(Financial Condition = Strong) = -14.188 + 9.172 * TotLns&Lses/Assets + 79.964*TotExp/Assets
+#	Logit(Financial Condition = Weak) = -14.188 + 9.172 * TotLns&Lses/Assets + 79.964*TotExp/Assets
+
+# (ii) The odds as a function of the predictors
+#	Odds(Financial Condition = Strong) = e ^ (-14.188 + 9.172 * TotLns&Lses/Assets + 79.964*TotExp/Assets)
+#	Odds(Financial Condition = Weak) = e ^ (-14.188 + 9.172 * TotLns&Lses/Assets + 79.964*TotExp/Assets)
+
+# (iii) The probability as a function of the predictors
+#	Probability(Financial Condition = Weak) = (e ^ (-14.188 + 9.172 * TotLns&Lses/Assets + 79.964 * TotExp/Assets)) / (1 + e ^ (-14.188 + 9.172 * TotLns&Lses/Assets + 79.964*TotExp/Assets))
+#	Probability(Financial Condition = Strong) = 1 / (1 + e ^ (-14.188 + 9.172 * TotLns&Lses/Assets + 79.964*TotExp/Assets))
+	
+
+# Problem 2-b
+
+``` {r}
+df <- data.frame(`TotLns&Lses/Assets` = 0.6, `TotExp/Assets` = 0.11)
+colnames(df) <- c("TotLns&Lses/Assets", "TotExp/Assets")
+
+logit <- -14.188 + 9.172 * df$`TotLns&Lses/Assets` + 79.964 * df$`TotExp/Assets`
+
+odds <- exp(logit)
+
+probability <- odds / (1 + odds)
+
+bank_class <- predict(fit_full, df, type = "response")
+	
+cat("Logit:", logit, "\n")
+cat("Odds:", odds, "\n")
+cat("Probability of being Financially Weak:", probability, "\n")
+cat(
+  "Classification of the Bank:",
+  ifelse(bank_class > 0.5, "Financially Weak", "Financially Strong"), "\n"
+)
+
+rm(list = ls())
+```
+	
+# Problem 2-c
+#	The odds of being financially weak are 1.11766 and the corresponding logit is 0.11124. So it is sufficient to say that the threshold for being classified as financially weak should be 0.5
+	
+
+# Problem 2-d
+# Answer -	The coefficient for the TotLns&Lses/Assets ratio signifies - increasing the TotLns&Lnses/Assets ratio by 1 increases the log odds of belonging to class "Financially Weak" by 9.172 (or the odds of belonging to class "Financially Weak" by exp(9.172))
+	
+
+# Problem 2-e
+# Answer - We should decrease the cutoff to something lesser than 0.5 so that the misclassification rate decreases.
+
+
+
+	---
+# Problem 3
+
+``` {r}
+System_Admin <- read_xlsx("System Administrators.xlsx", sheet = "data")
+```
+	
+
+# Problem 3-a 
+
+```{r }
+	
+System_Admin %>% ggplot(mapping = aes(
+  x = Experience,
+  y = Training,
+  colour = `Completed task`
+)) +
+  geom_point()
+```
+	
+# Analysis:
+#	The predictor Experience seems useful for classifying task completion since the scatter plot indicates that the completion of a task is directly proportional to increasing experience.
+	
+
+# Problem 3-b
+
+```{r }
+System_Admin$Completed_Task <- factor(System_Admin$`Completed task`,
+  levels = c("No", "Yes"),
+  labels = c(0, 1)
+)
+	log_reg <- glm(Completed_Task ~ Experience + Training,
+  family = binomial(),
+  data = System_Admin
+)
+
+summary(log_reg)
+
+log_red.pred <- predict(log_reg, newdata = System_Admin, type = "response")
+	
+log_red.pred
+```
+
+# Analysis:
+# The records 7,8,11,14,15 have been misclassified by the model among those who complete the task
+#	the percentage of programmers who are incorrectly classified as failing to complete the task is 33.33%
+# Problem 3-c To decrease the percentage in part (b), should the cutoff probability be increased 	or decreased?
+#	 The cutoff probability needs to be decreased for the percentage of programmers who are incorrectly classified as    failing to complete the task.
+	
+
+# Problem 3-d
+
+```{r }
+sample1 <- System_Admin[which(System_Admin$Training == 4), ]
+sample1 <- sample1[order(-sample1$Experience), ]
+
+log_reg1 <- glm(Completed_Task ~ Experience + Training,
+  family = binomial(),
+  data = sample1
+)
+	
+summary(log_reg1)
+
+log_red.pred1 <- predict(log_reg1, newdata = sample1, type = "response")
+
+log_red.pred1
+
+sample1[6, 1]
+
+rm(list = ls())
+```
+
